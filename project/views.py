@@ -50,9 +50,11 @@ def login():
 @app.route('/tasks/')
 @login_required
 def tasks():
-    open_tasks = db.session.query(Task).filter_by(status='1').order_by(Task.due_date.asc())
+    temp_session=db.session
+    """:type: sqlalchemy.orm.Session"""
+    open_tasks=temp_session.query(Task).filter_by(status='1').order_by(Task.due_date.asc())
 
-    closed_tasks = db.session.query(Task).filter_by(status='0').order_by(Task.due_date.asc())
+    closed_tasks = temp_session.query(Task).filter_by(status='0').order_by(Task.due_date.asc())
 
     return render_template('tasks.html', form=AddTaskForm(request.form), open_tasks=open_tasks,
                            closed_tasks=closed_tasks)
@@ -70,8 +72,10 @@ def new_task():
                     form.priority.data,
                     '1'
             )
-            db.session.add(new_task)
-            db.session.commit()
+            temp_session=db.session
+            """:type: sqlalchemy.orm.Session"""
+            temp_session.add(new_task)
+            temp_session.commit()
             flash('New entry was successfully posted. Thanks.')
 
     return redirect(url_for('tasks'))
@@ -81,8 +85,10 @@ def new_task():
 @login_required
 def complete(task_id):
     new_id = task_id
-    db.session.query(Task).filter_by(task_id=new_id).update({"status": "0"})
-    db.session.commit()
+    temp_session=db.session
+    """:type: sqlalchemy.orm.Session"""
+    temp_session.query(Task).filter_by(task_id=new_id).update({"status": "0"})
+    temp_session.commit()
     flash('The task was marked as complete. Nice')
     return redirect(url_for('tasks'))
 
@@ -91,7 +97,9 @@ def complete(task_id):
 @login_required
 def delete_entry(task_id):
     new_id = task_id
-    db.session.query(Task).filter_by(task_id=new_id).delete()
-    db.session.commit()
+    temp_session=db.session
+    """:type: sqlalchemy.orm.Session"""
+    temp_session.query(Task).filter_by(task_id=new_id).delete()
+    temp_session.commit()
     flash("The task was deleted.")
     return redirect(url_for('tasks'))
