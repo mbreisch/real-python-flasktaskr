@@ -5,6 +5,7 @@ import datetime
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 from forms import AddTaskForm, RegisterForm, LoginForm
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.exc import IntegrityError
 
 # config
 app = Flask(__name__)
@@ -27,12 +28,29 @@ def login_required(test):
     return wrap
 
 
+def flash_errors(form):
+    for field, errors in form.errors.items():
+        for error in errors:
+            flash(u"Error in the %s field - %s" % (
+                getattr(form, field).label.text,
+                error
+            ))
+
+
+def open_tasks():
+    return db.session.query(Task).filter_by(status='1').order_by(Task.due_date.asc())
+
+
+def closed_tasks():
+    return db.session.query(Task).filter_by(status='0').order_by(Task.due_date.asc())
+
+
 # route handlers
 
 @app.route('/logout/')
 def logout():
     session.pop('logged_in', None)
-    session.pop('user_id',None)
+    session.pop('user_id', None)
     flash("Goodbye!")
     return redirect(url_for('login'))
 
@@ -45,35 +63,30 @@ def login():
         if form.validate_on_submit():
             query = User.query
             """:type: sqlalchemy.orm.Query"""
-            user=query.filter_by(name=request.form['name']).first()
+            user = query.filter_by(name=request.form['name']).first()
             if user is not None and user.password == request.form['password']:
                 session['logged_in'] = True
-                session['user_id']=user.id
+                session['user_id'] = user.id
                 flash("Welcome!")
                 return redirect(url_for('tasks'))
             else:
                 error = 'Invalid username or password'
         else:
-            error='Both fields are required'
-    return render_template("login.html",form=form,error=error)
+            error = 'Both fields are required'
+    return render_template("login.html", form=form, error=error)
 
 
 @app.route('/tasks/')
 @login_required
 def tasks():
-    temp_session = db.session
-    """:type: sqlalchemy.orm.Session"""
-    open_tasks = temp_session.query(Task).filter_by(status='1').order_by(Task.due_date.asc())
-
-    closed_tasks = temp_session.query(Task).filter_by(status='0').order_by(Task.due_date.asc())
-
-    return render_template('tasks.html', form=AddTaskForm(request.form), open_tasks=open_tasks,
-                           closed_tasks=closed_tasks)
+    return render_template('tasks.html', form=AddTaskForm(request.form), open_tasks=open_tasks(),
+                           closed_tasks=closed_tasks())
 
 
 @app.route('/add/', methods=['POST'])
 @login_required
 def new_task():
+    error = None
     form = AddTaskForm(request.form)
     if request.method == 'POST':
         if form.validate_on_submit():
@@ -90,8 +103,9 @@ def new_task():
             temp_session.add(new_task)
             temp_session.commit()
             flash('New entry was successfully posted. Thanks.')
+            return redirect(url_for('tasks'))
 
-    return redirect(url_for('tasks'))
+    return render_template('tasks.html', form=form, error=error,open_tasks=open_tasks(),closed_tasks=closed_tasks())
 
 
 @app.route('/complete/<int:task_id>/')
@@ -127,9 +141,13 @@ def register():
             new_user = User(form.name.data, form.email.data, form.password.data)
             temp_session = db.session
             """:type: sqlalchemy.orm.Session"""
-            temp_session.add(new_user)
-            temp_session.commit()
-            flash("Thanks for registering. Please login.")
-            return redirect(url_for('login'))
+            try:
+                temp_session.add(new_user)
+                temp_session.commit()
+                flash("Thanks for registering. Please login.")
+                return redirect(url_for('login'))
+            except IntegrityError:
+                error='That username and/or email already exists'
+                return render_template('register.html',form=form,error=error)
 
     return render_template('register.html', form=form, error=error)
