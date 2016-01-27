@@ -63,3 +63,7 @@ fabric.properties
 
 #Database File
 *.db
+
+#Coverage Files
+.coverage
+htmlcov/
