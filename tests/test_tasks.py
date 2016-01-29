@@ -1,7 +1,7 @@
 import unittest
 
 import os
-from project import app, db
+from project import app, db,bcrypt
 from project._config import basedir
 from project.models import User
 
@@ -37,7 +37,7 @@ class TasksTest(unittest.TestCase):
         ), follow_redirects=True)
 
     def create_user(self, name, email, password):
-        new_user = User(name=name, email=email, password=password)
+        new_user = User(name=name, email=email, password=bcrypt.generate_password_hash(password))
         db.session.add(new_user)
         db.session.commit()
 
@@ -45,7 +45,7 @@ class TasksTest(unittest.TestCase):
         new_user=User(
             name= TEST_ADMIN_USER[0],
             email=TEST_ADMIN_USER[1],
-            password=TEST_ADMIN_USER[2],
+            password=bcrypt.generate_password_hash(TEST_ADMIN_USER[2]),
             role="admin"
         )
         db.session.add(new_user)
