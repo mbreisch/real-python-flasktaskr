@@ -66,8 +66,12 @@
                 <td width="50px">{{ task.priority }}</td>
                 <td width="90px">{{ task.poster.name }}</td>
                 <td>
+                    {% if task.poster.name == session.name or session.role == "admin" %}
                     <a href="{{ url_for('tasks.delete_entry',task_id=task.task_id) }}">Delete</a>
                     <a href="{{ url_for('tasks.complete',task_id=task.task_id) }}">Mark as Complete</a>
+                    {% else %}
+                    <span>N/A</span>
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}
@@ -98,7 +102,11 @@
                 <td width="50px">{{ task.priority }}</td>
                 <td width="90px">{{ task.poster.name }}</td>
                 <td>
+                    {% if task.poster.name == session.name or session.role == "admin" %}
                     <a href="{{ url_for('tasks.delete_entry',task_id=task.task_id) }}">Delete</a>
+                    {% else %}
+                    <span>N/A</span>
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}

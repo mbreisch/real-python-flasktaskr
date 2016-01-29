@@ -34,6 +34,7 @@ def logout():
     session.pop('logged_in', None)
     session.pop('user_id', None)
     session.pop('role', None)
+    session.pop('name',None)
     flash("Goodbye!")
     return redirect(url_for('users.login'))
 
@@ -51,6 +52,7 @@ def login():
                 session['logged_in'] = True
                 session['user_id'] = user.id
                 session['role'] = user.role
+                session['name']=user.name
                 flash("Welcome!")
                 return redirect(url_for('tasks.tasks'))
             else:

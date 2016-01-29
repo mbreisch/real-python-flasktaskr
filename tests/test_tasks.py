@@ -8,6 +8,7 @@ from project.models import User
 TEST_DB = 'test.db'
 TEST_USER = ("Testing1", "testing@gmail.com", "python")
 TEST_ADMIN_USER=("Superman","super@man.org","zodMustDie")
+TEST_USER_2=("Testing2","testing2@gmail.com","python")
 
 
 class TasksTest(unittest.TestCase):
@@ -20,6 +21,7 @@ class TasksTest(unittest.TestCase):
         self.app = app.test_client()
         db.create_all()
         self.create_user(TEST_USER[0],TEST_USER[1],TEST_USER[2])
+        self.create_user(TEST_USER_2[0],TEST_USER_2[1],TEST_USER_2[2])
 
     def tearDown(self):
         db.session.remove()
@@ -51,6 +53,9 @@ class TasksTest(unittest.TestCase):
 
     def login(self, name, password):
         return self.app.post('/', data=dict(name=name, password=password), follow_redirects=True)
+
+    def logout(self):
+        return self.app.get('logout/',follow_redirects=True)
 
     def test_users_can_add_tasks(self):
         self.login(TEST_USER[0],TEST_USER[2])
@@ -88,8 +93,7 @@ class TasksTest(unittest.TestCase):
         self.login(TEST_USER[0],TEST_USER[2])
         self.app.get("tasks/", follow_redirects=True)
         self.create_task()
-        self.create_user("testing2", "testing2@gmail.com", "123456")
-        self.login("testing2", "123456")
+        self.login(TEST_USER_2[0], TEST_USER_2[2])
         self.app.get("tasks/", follow_redirects=True)
         response = self.app.get("complete/1/", follow_redirects=True)
         self.assertNotIn(b"The task was marked as complete. Nice", response.data)
@@ -99,8 +103,7 @@ class TasksTest(unittest.TestCase):
         self.login(TEST_USER[0],TEST_USER[2])
         self.app.get("tasks/", follow_redirects=True)
         self.create_task()
-        self.create_user("testing2", "testing2@gmail.com", "123456")
-        self.login("testing2", "123456")
+        self.login(TEST_USER_2[0], TEST_USER_2[2])
         self.app.get("tasks/", follow_redirects=True)
         response = self.app.get("delete/1/", follow_redirects=True)
         self.assertIn(b"You can only delete tasks that belong to you",response.data)
@@ -125,6 +128,49 @@ class TasksTest(unittest.TestCase):
         response = self.app.get("delete/1/", follow_redirects=True)
         self.assertNotIn(b"You can only delete tasks that belong to you",response.data)
 
+    def test_task_template_displays_logged_in_user_name(self):
+        self.login(TEST_USER[0],TEST_USER[2])
+        response=self.app.get('tasks/',follow_redirects=True)
+        self.assertIn(b"{}".format(TEST_USER[0]),response.data)
+
+    def test_users_cannot_see_task_modify_links_for_tasks_not_created_by_them(self):
+        self.login(TEST_USER[0],TEST_USER[2])
+        self.app.get('tasks/',follow_redirects=True)
+        self.create_task()
+        self.logout()
+        response=self.login(TEST_USER_2[0],TEST_USER_2[2])
+        self.app.get('tasks/',follow_redirects=True)
+        self.assertNotIn(b"Mark as complete",response.data)
+        self.assertNotIn(b"Delete",response.data)
+
+    def test_users_can_see_task_modify_links_for_tasks_created_by_them(self):
+        self.login(TEST_USER[0],TEST_USER[2])
+        self.app.get('tasks/',follow_redirects=True)
+        self.create_task()
+        self.logout()
+        self.login(TEST_USER_2[0],TEST_USER_2[2])
+        self.app.get('tasks/',follow_redirects=True)
+        response=self.create_task()
+        self.assertIn(b"complete/2/",response.data)
+        self.assertIn(b"complete/2/",response.data)
+
+    def test_admin_users_can_see_task_modify_links_for_all_tasks(self):
+        self.login(TEST_USER[0],TEST_USER[2])
+        self.app.get('tasks/',follow_redirects=True)
+        self.create_task()
+        self.logout()
+        self.login(TEST_USER_2[0],TEST_USER_2[2])
+        self.app.get('tasks/',follow_redirects=True)
+        self.create_task()
+        self.logout()
+        self.create_admin_user()
+        self.login(TEST_ADMIN_USER[0],TEST_ADMIN_USER[2])
+        self.app.get('tasks/',follow_redirects=True)
+        response=self.create_task()
+        self.assertIn(b'complete/1/', response.data)
+        self.assertIn(b'delete/1/', response.data)
+        self.assertIn(b'complete/2/', response.data)
+        self.assertIn(b'delete/2/', response.data)
 
 if __name__ == "__main__":
     unittest.main()
