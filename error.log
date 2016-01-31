@@ -1,7 +1,0 @@
-
-404  error at 30-01-2016 18:45:20: http://127.0.0.1:5000/favicon.ico
-404  error at 30-01-2016 18:45:32: http://127.0.0.1:5000/no-such-thing/
-404  error at 30-01-2016 18:47:02: http://127.0.0.1:5000/no-such-thing/
-500  error at 30-01-2016 18:47:55: http://127.0.0.1:5000/
-500  error at 30-01-2016 18:48:39: http://127.0.0.1:5000/
-404  error at 30-01-2016 18:50:59: http://localhost/this-route-does-not-exist/

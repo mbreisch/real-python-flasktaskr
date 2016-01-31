@@ -61,9 +61,12 @@ crashlytics.properties
 crashlytics-build.properties
 fabric.properties
 
-#Database File
+# Database File
 *.db
 
-#Coverage Files
+# Coverage Files
 .coverage
 htmlcov/
+
+# Log Files
+*.log
