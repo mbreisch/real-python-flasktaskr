@@ -46,6 +46,13 @@ class MainTests(unittest.TestCase):
     #     self.assertEquals(response.status_code, 500)
     #     self.assertNotIn(b'ValueError: Invalid salt', response.data)
     #     self.assertIn(b'Something went terribly wrong', response.data)
+    def test_index(self):
+        """
+        Ensure flask was set up correctly
+        :return:
+        """
+        response=self.app.get('/',content_type='html/text')
+        self.assertEquals(response.status_code,200)
 
 
 if __name__ == "__main__":
